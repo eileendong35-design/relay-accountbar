@@ -13,8 +13,7 @@
   "lint": "oxlint",
   "lint:fix": "oxlint --fix",
   "dist": "npm run build && electron-builder --win",
-  "dist:mac": "npm run build && electron-builder --mac",
-  "dist:linux": "npm run build && electron-builder --linux"
+  "dist:mac": "npm run build && electron-builder --mac"
  },
  "author": {
   "name": "Relay",
@@ -100,15 +99,6 @@
    "icon": "assets/app-icon.icns",
    "target": [
     "dmg"
-   ]
-  },
-  "linux": {
-   "icon": "assets/icon.png",
-   "maintainer": "Relay <arkucrypto@gmail.com>",
-   "category": "Utility",
-   "target": [
-    "deb",
-    "tar.gz"
    ]
   }
  }

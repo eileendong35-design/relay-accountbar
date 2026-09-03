@@ -2,7 +2,7 @@ name: Release
 
 # Build each platform independently (no GitHub publish), then attach all
 # artifacts in a single job. This avoids electron-builder race conditions
-# that create multiple draft releases for the same tag when win/mac/linux
+# that create multiple draft releases for the same tag when win/mac
 # all run `electron-builder --publish=always` in parallel.
 
 on:
@@ -37,12 +37,6 @@ jobs:
               dist/*.dmg
               dist/*.blockmap
               dist/latest-mac.yml
-          - os: ubuntu-latest
-            target: linux
-            artifact: |
-              dist/*.deb
-              dist/*.tar.gz
-              dist/latest-linux.yml
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -52,19 +46,13 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install Linux build dependencies
-        if: matrix.target == 'linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libsecret-1-dev fakeroot rpm
-
       - name: Install dependencies
         run: npm ci
 
       - name: Build
         run: npm run build
 
-      # Never publish from matrix jobs — that races and creates split drafts.
+      # Never publish from matrix jobs; that races and creates split drafts.
       - name: Package (no publish)
         run: npx electron-builder --${{ matrix.target }} --publish never
         env:

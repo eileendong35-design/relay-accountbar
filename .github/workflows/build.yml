@@ -17,9 +17,6 @@ jobs:
           - os: macos-latest
             target: mac
             artifact: dist/*.dmg dist/*.blockmap
-          - os: ubuntu-latest
-            target: linux
-            artifact: dist/*.deb dist/*.tar.gz
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -27,11 +24,6 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Install Linux build dependencies
-        if: matrix.target == 'linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libsecret-1-dev fakeroot rpm
       - run: npm ci
       - run: npm run build
       - run: npx electron-builder --${{ matrix.target }} --publish never

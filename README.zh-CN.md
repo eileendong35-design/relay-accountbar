@@ -18,7 +18,7 @@
 
 Relay Account Bar 是 [ark-daemon/relay](https://github.com/ark-daemon/relay)
 的非官方社区增强版本。它可以管理保存在本机的 Codex 账号配置，在紧凑的置顶账号栏中
-显示用量额度，并帮助你在 Windows、macOS 和 Linux 上快速切换自己的账号。
+显示用量额度，并帮助你在 Windows 和 macOS 上快速切换自己的账号。
 
 > 本项目与 OpenAI 没有关联，也未获得 OpenAI 官方认可。请仅用于你本人拥有或获准使用的
 > 账号，并遵守适用的 OpenAI 条款和政策。本项目不用于绕过任何服务限制。
@@ -50,7 +50,6 @@ Relay Account Bar 是 [ark-daemon/relay](https://github.com/ark-daemon/relay)
 
 - Windows：安装版 `.exe` 或便携版 `.exe`
 - macOS：Apple 芯片版 `.dmg`（M1/M2/M3/M4/M5）
-- Linux：`.deb` 或 `.tar.gz`
 
 macOS 安装包目前未进行 Apple 开发者签名。首次打开时可能需要按住 Control 点击应用，
 选择“打开”，再确认启动。
@@ -71,14 +70,13 @@ npm run build
 ```bash
 npm run dist       # Windows
 npm run dist:mac   # macOS
-npm run dist:linux # Linux
 ```
 
 ## 使用方法
 
 1. 启动 Relay Account Bar，添加或捕获你拥有的 Codex 账号。
 2. 在紧凑账号栏中查看额度，点击账号进行切换。
-3. Windows/Linux 使用 `Ctrl + Shift + Space`，macOS 使用
+3. Windows 使用 `Ctrl + Shift + Space`，macOS 使用
    `Command + Shift + Space` 隐藏或恢复账号栏。
 4. 单击托盘或菜单栏图标切换账号栏；双击图标打开完整控制面板。
 
@@ -89,7 +87,7 @@ npm run dist:linux # Linux
 
 - Relay 数据保存在操作系统的应用数据目录中。
 - Codex 的当前状态仍保存在 `~/.codex`。
-- 保存的认证文件会尽可能使用 Windows DPAPI、macOS 钥匙串或 Linux libsecret 加密。
+- 保存的认证文件会使用 Windows DPAPI 或 macOS 钥匙串加密。
 - 应用仅为认证、令牌刷新和额度查询访问 OpenAI 接口，不包含分析或遥测功能。
 - 导出的备份包含敏感账号令牌，请务必设置强密码并妥善保存。
 

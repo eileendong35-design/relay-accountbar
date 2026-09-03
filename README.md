@@ -19,7 +19,7 @@
 Relay Account Bar is an unofficial community-enhanced fork of
 [ark-daemon/relay](https://github.com/ark-daemon/relay). It manages locally stored
 Codex profiles, shows quota windows in a compact always-on-top panel, and makes
-switching between accounts easier on Windows, macOS, and Linux.
+switching between accounts easier on Windows and macOS.
 
 > This project is not affiliated with or endorsed by OpenAI. Use it only with
 > accounts you own or are authorized to use, and follow the applicable OpenAI
@@ -71,7 +71,6 @@ Create a platform package on the matching operating system:
 ```bash
 npm run dist       # Windows
 npm run dist:mac   # macOS
-npm run dist:linux # Linux
 ```
 
 Unsigned macOS builds may require Control-clicking the app and choosing Open on
@@ -82,7 +81,7 @@ with an Apple Developer certificate.
 
 1. Start Relay Account Bar and add or capture each Codex account you own.
 2. Use the compact panel to inspect quotas and switch profiles.
-3. Press `Ctrl + Shift + Space` on Windows/Linux or
+3. Press `Ctrl + Shift + Space` on Windows or
    `Command + Shift + Space` on macOS to hide or restore the panel.
 4. Single-click the tray/menu-bar icon to toggle the panel; double-click it to
    open the full dashboard.
@@ -95,8 +94,8 @@ device.
 
 - Relay data stays under the operating system's application-data directory.
 - Live Codex state remains in `~/.codex`.
-- Stored authentication files are encrypted with DPAPI, macOS Keychain, or
-  libsecret where available.
+- Stored authentication files are encrypted with Windows DPAPI or macOS
+  Keychain.
 - The app contacts OpenAI endpoints only for authentication/token refresh and
   quota retrieval. It includes no analytics or telemetry.
 - Export bundles contain sensitive account tokens and must be protected with a
