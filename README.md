@@ -1,155 +1,116 @@
 <div align="center">
-  <img src="assets/icon.png" width="96" alt="Relay" />
+  <img src="assets/icon.png" width="96" alt="Relay Account Bar" />
 
-  # Relay
+  # Relay Account Bar
 
-  **Session manager for ChatGPT Desktop**  
-  *Hot-swaps session data in `~/.codex` with encrypted profiles & automatic failover*
+  **A compact multi-account companion for the OpenAI Codex desktop app**
 
-  [![Release](https://img.shields.io/github/v/release/ark-daemon/codex-manager?style=flat-square)](https://github.com/ark-daemon/codex-manager/releases)
-  [![Build](https://img.shields.io/github/actions/workflow/status/ark-daemon/codex-manager/build.yml?style=flat-square&label=Build)](https://github.com/ark-daemon/codex-manager/actions)
-  [![Electron](https://img.shields.io/badge/Electron-39-47848f?style=flat-square&logo=electron)](https://electronjs.org)
-  [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178c6?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
-  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](./LICENSE)
-
-  [Download](#installation) • [Features](#features) • [How it works](#how-it-works) • [Security](#security) • [Development](#development)
-
-  <br/>
-  <br/>
-
-  <img src="assets/readme.png" width="800" alt="Relay Screenshot" />
+  [![Build](https://github.com/eileendong35-design/relay-accountbar/actions/workflows/build.yml/badge.svg)](https://github.com/eileendong35-design/relay-accountbar/actions/workflows/build.yml)
+  [![Electron](https://img.shields.io/badge/Electron-39-47848f?logo=electron)](https://electronjs.org)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 </div>
 
----
+Relay Account Bar is an unofficial community-enhanced fork of
+[ark-daemon/relay](https://github.com/ark-daemon/relay). It manages locally stored
+Codex profiles, shows quota windows in a compact always-on-top panel, and makes
+switching between accounts easier on Windows, macOS, and Linux.
 
-Relay is a cross-platform desktop app (Windows, macOS, Linux) for keeping multiple ChatGPT / Codex accounts ready and switching between them in about two seconds, without editing config files by hand.
+> This project is not affiliated with or endorsed by OpenAI. Use it only with
+> accounts you own or are authorized to use, and follow the applicable OpenAI
+> terms and policies. It is not intended to bypass service restrictions.
 
-It encrypts stored credentials, snapshots per-account Codex state under `~/.codex`, and hot-swaps the active profile while closing and relaunching the desktop app cleanly.
+## 增强功能 / Enhancements
 
-> [!NOTE]
-> **No telemetry. No analytics.** Credentials stay on your machine except when talking to OpenAI’s own endpoints (`auth.openai.com`, `chatgpt.com`).
+- 紧凑型常驻账号栏，可同时查看账号、额度百分比和重置倒计时
+- 点击账号即可切换，单独刷新某个账号的用量
+- `Ctrl/Command + Shift + Space` 显示或隐藏账号栏
+- 可通过账号栏关闭按钮或系统托盘图标进行鼠标操作
+- Electron 单实例锁：重复启动只唤醒已有实例，不创建重复账号栏
+- 启动优化：优先显示轻量账号栏，完整主窗口按需创建
+- 账号同步和额度网络请求延后执行，减少冷启动卡顿
+- 自定义版本不会被上游自动更新静默覆盖
 
-## Requirements
+## Original Relay features
 
-- **OpenAI Codex desktop** installed (current Windows Store/MSIX package is still `OpenAI.Codex`; the GUI process is often `ChatGPT.exe`)
-- Node.js **22+** only if you build from source
-
-This app manages **Codex agent sessions and quotas**, not general ChatGPT web chat history.
+- Encrypted local profile storage using Electron `safeStorage`
+- Usage polling with five-hour, weekly, monthly, and credit windows
+- Automatic switching at a configurable low-quota threshold
+- Login capture, token refresh, profile import/export, and notifications
+- Shared conversation data with per-account authentication and preferences
+- Dark/light themes and system tray controls
 
 ## Installation
 
-Download the latest release for your platform from the [Releases page](https://github.com/ark-daemon/codex-manager/releases):
+Download a package from the repository's
+[Releases](https://github.com/eileendong35-design/relay-accountbar/releases) page
+when one is available, or build from source.
 
-| Platform | Package |
-|----------|---------|
-| **Windows** | `Relay Setup x.x.x.exe` (NSIS) or portable `.exe` |
-| **macOS** | `Relay-x.x.x.dmg` |
-| **Linux** | `relay_x.x.x.deb` or `.tar.gz` |
+### Build from source
 
-The app checks for updates on launch and allows manual checks from the Settings page (no silent background updates).
-
-> [!IMPORTANT]
-> **Linux:** encrypted auth storage needs `libsecret-1`. Install with `sudo apt install libsecret-1-0` (Debian/Ubuntu) or your distro’s equivalent. If no keyring is available, set a session passphrase (AES-256-GCM) when prompted.
-
-## Features
-
-- **Instant switching:** decrypts the target profile, writes it into `~/.codex`, fully quits ChatGPT/Codex, then relaunches
-- **Usage polling:** refreshes each account’s quota on an interval (default 20 minutes) with five-hour, weekly, monthly, and credit windows plus reset countdowns
-- **Auto-switch:** when the active account drops below a threshold (default 10%), picks the highest-quota ready account
-- **Silent token refresh:** refreshes expired JWT access before a switch when a refresh token is available
-- **Login capture:** opens the browser login flow, captures auth + session files, and saves a named profile
-- **Import / export:** backup all profiles to a versioned JSON bundle; optional passphrase encryption for the export file
-- **System tray:** quick switch, quota summary, and background service toggle; closes to tray by default
-- **Desktop notifications:** low-quota and “available again” alerts on Windows and macOS
-- **Dark / light theme:** follows the OS with a Settings override
-
-## How it works
-
-Profiles are stored under the Relay data directory (see below). On switch, the app:
-
-1. Closes the desktop shell (`ChatGPT.exe` / `Codex` / helper `codex` processes)
-2. Saves the previous account’s managed files back into its profile folder
-3. Restores the target profile’s auth, config, personalisation, and related files into `~/.codex`
-4. Relaunches the desktop app (on Windows MSIX via the package AUMID)
-
-### Per-account vs shared
-
-| Swapped (per profile) | Left shared on the machine |
-|-----------------------|----------------------------|
-| `auth.json`, `profiles/`, `profiles.json`, `cap_sid` | Conversation DBs (`state_5.sqlite*`, …) |
-| `config.toml`, hooks, rules, agents, memories | `sessions/`, session index |
-| Per-account UI state (`.codex-global-state.json`)* | Cache, installation id, model list |
-
-_\* Select global state fields (like recent local projects, workspaces, and active plugins) are merged across accounts so they are always available._
-
-Conversation history is intentionally **not** forked per account: Codex stores threads without a per-user partition in those databases, so swapping them would corrupt other accounts’ history.
-
-## Security
-
-Threat model: a local attacker with filesystem access, and a compromised renderer process.
-
-- **Encryption at rest:** auth files use Electron `safeStorage` (Windows DPAPI, macOS Keychain, Linux libsecret), marked with a `CMENC1:` prefix
-- **Passphrase fallback:** if no OS keychain is available, auth is sealed with AES-256-GCM (`CMPWD1:`) using a session passphrase you enter each launch
-- **Fails closed:** without keychain or passphrase, credentials are not written as plaintext
-- **Hardened renderer:** `contextIsolation`, no Node in the page, `sandbox`, navigation blocked; IPC only accepted from the app’s own frames
-- **Minimal network:** `auth.openai.com` (token refresh) and `chatgpt.com` (quota)
-
-> [!CAUTION]
-> Export bundles contain account tokens and are **always encrypted** with a passphrase you choose. Treat the file and the passphrase like credentials. Legacy plaintext exports (older versions) can still be imported.
-
-To report a vulnerability, **do not open a public issue**. Email `arkucrypto@gmail.com` with details and a reproduction.
-
-## Compatibility
-
-OpenAI renames shell binaries and package layouts occasionally. Relay matches:
-
-- Process names: `ChatGPT`, `Codex`, `codex`
-- MSIX package: `OpenAI.Codex` (fallback `OpenAI.ChatGPT` if renamed)
-- Session root: `~/.codex`
-
-If a future desktop update changes process names or paths again, switches may fail until Relay is updated. Open an issue with your OS, app version, and process list.
-
-## Development
-
-**Prerequisites:** Node.js 22+, npm 10+
+Requirements: Node.js 22+ and npm 10+.
 
 ```bash
-git clone https://github.com/ark-daemon/codex-manager.git
-cd codex-manager
-npm install
-
-# Tests (~101 across 11 suites)
+git clone https://github.com/eileendong35-design/relay-accountbar.git
+cd relay-accountbar
+npm ci
 npm test
-
-# Build main + renderer, then launch Electron
-npm start
-
-# Package
-npm run dist        # Windows: NSIS + portable
-npm run dist:mac    # macOS: DMG
-npm run dist:linux  # Linux: .deb + .tar.gz
+npm run build
 ```
 
-CI builds installers on every push (`build.yml`). Pushing a `v*` tag runs the release workflow and attaches draft GitHub Release assets.
+Create a platform package on the matching operating system:
 
-### Project structure
-
-```
-electron/           # Main process
-├── main.ts         # Window, tray, IPC, auto-update
-├── preload.cts     # Typed context bridge
-└── services/       # Profiles, auth, switch, usage, process, paths, …
-src/                # React UI (accounts, settings, tray-driven state)
-tests/              # Vitest unit + integration suites
-scripts/            # Icons, assets, post-build
+```bash
+npm run dist       # Windows
+npm run dist:mac   # macOS
+npm run dist:linux # Linux
 ```
 
-### Data directory
+Unsigned macOS builds may require Control-clicking the app and choosing Open on
+first launch. Publicly distributed macOS packages should be signed and notarized
+with an Apple Developer certificate.
 
-| OS | Path |
-|----|------|
-| Windows | `%LOCALAPPDATA%\Relay\` |
-| macOS | `~/Library/Application Support/Relay/` |
-| Linux | `~/.config/Relay/` |
+## Usage
 
-Live Codex session files remain in `~/.codex` (managed on switch; not the same as the Relay store above).
+1. Start Relay Account Bar and add or capture each Codex account you own.
+2. Use the compact panel to inspect quotas and switch profiles.
+3. Press `Ctrl + Shift + Space` on Windows/Linux or
+   `Command + Shift + Space` on macOS to hide or restore the panel.
+4. Single-click the tray/menu-bar icon to toggle the panel; double-click it to
+   open the full dashboard.
+
+Account credentials are operating-system specific. Do not copy a Relay data
+directory from Windows to macOS. Install the app and sign in again on the new
+device.
+
+## Data and security
+
+- Relay data stays under the operating system's application-data directory.
+- Live Codex state remains in `~/.codex`.
+- Stored authentication files are encrypted with DPAPI, macOS Keychain, or
+  libsecret where available.
+- The app contacts OpenAI endpoints only for authentication/token refresh and
+  quota retrieval. It includes no analytics or telemetry.
+- Export bundles contain sensitive account tokens and must be protected with a
+  strong passphrase.
+
+Never commit `.env` files, `auth.json`, exported account bundles, signing
+certificates, or application-data directories.
+
+## Project structure
+
+```text
+electron/  Electron main process, IPC, profile and quota services
+src/       React dashboard and compact account bar
+tests/     Vitest unit and integration tests
+assets/    Application and tray icons
+scripts/   Build helpers
+```
+
+## Attribution and license
+
+This repository is based on
+[ark-daemon/relay](https://github.com/ark-daemon/relay), created by
+[ark-daemon](https://github.com/ark-daemon). The original copyright notice is
+preserved in [LICENSE](./LICENSE).
+
+The project and these modifications are distributed under the MIT License.

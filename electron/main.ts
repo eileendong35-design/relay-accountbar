@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import electron, { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, nativeTheme, session, shell, Tray } from "electron";
+import electron, { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, nativeImage, nativeTheme, screen, session, shell, Tray } from "electron";
 import type { IpcMainInvokeEvent, IpcMainEvent } from "electron";
 
 const { Notification } = electron;
@@ -77,17 +77,32 @@ function getTrayIcon(): Electron.NativeImage {
 const appIconPath = getAppIconPath();
 
 let mainWindow: BrowserWindow | undefined;
+let accountBarWindow: BrowserWindow | undefined;
 let profileStore: ProfileStore;
 let usagePoller: UsagePoller;
 let activeProfileSyncer: ActiveProfileSyncer;
 let tray: Tray | undefined;
 let quitting = false;
+let readyForWindows = false;
 
 app.setName("Relay");
 if (process.platform === "win32") {
   app.setAppUserModelId("Relay");
 }
 Menu.setApplicationMenu(null);
+
+const hasSingleInstanceLock = app.requestSingleInstanceLock();
+if (!hasSingleInstanceLock) {
+  app.quit();
+}
+
+app.on("second-instance", () => {
+  // A second launch should surface the existing app, never create another
+  // account bar competing for the same global shortcut.
+  if (readyForWindows) {
+    showMainWindow();
+  }
+});
 
 /**
  * SECURITY: validate the origin of every IPC message.
@@ -217,6 +232,87 @@ function createWindow(): BrowserWindow {
   return window;
 }
 
+function loadRenderer(window: BrowserWindow, mode?: "account-bar"): void {
+  const search = mode ? `?mode=${mode}` : "";
+  if (process.env.VITE_DEV_SERVER_URL) {
+    void window.loadURL(`${process.env.VITE_DEV_SERVER_URL}${search}`);
+  } else {
+    void window.loadFile(path.join(__dirname, "..", "..", "dist", "renderer", "index.html"), {
+      search: mode ? `mode=${mode}` : undefined
+    });
+  }
+}
+
+function accountBarBounds(): Electron.Rectangle {
+  const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+  const width = 360;
+  const height = Math.min(520, display.workArea.height - 32);
+  return {
+    x: display.workArea.x + display.workArea.width - width - 12,
+    y: display.workArea.y + Math.max(12, Math.round((display.workArea.height - height) / 2)),
+    width,
+    height
+  };
+}
+
+function createAccountBarWindow(): BrowserWindow {
+  const window = new BrowserWindow({
+    ...accountBarBounds(),
+    minWidth: 330,
+    minHeight: 360,
+    maxWidth: 420,
+    title: "Relay Account Bar",
+    icon: appIconPath,
+    frame: false,
+    transparent: false,
+    resizable: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    autoHideMenuBar: true,
+    backgroundColor: "#0A0A0F",
+    webPreferences: {
+      preload: path.join(__dirname, "preload.cjs"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true
+    }
+  });
+  window.setAlwaysOnTop(true, "floating");
+  loadRenderer(window, "account-bar");
+  window.on("close", (event) => {
+    if (!quitting) {
+      event.preventDefault();
+      window.hide();
+    }
+  });
+  window.on("closed", () => {
+    if (accountBarWindow === window) accountBarWindow = undefined;
+  });
+  return window;
+}
+
+function showAccountBar(): void {
+  const window = accountBarWindow ?? createAccountBarWindow();
+  accountBarWindow = window;
+  if (!window.isVisible()) window.setBounds(accountBarBounds());
+  window.show();
+  window.focus();
+  void updateTrayMenu();
+}
+
+function hideAccountBar(): void {
+  accountBarWindow?.hide();
+  void updateTrayMenu();
+}
+
+function toggleAccountBar(): void {
+  if (accountBarWindow?.isVisible()) {
+    hideAccountBar();
+  } else {
+    showAccountBar();
+  }
+}
+
 function registerIpc(): void {
   safeHandle("profiles:get-state", () => profileStore.getState());
   safeHandle("profiles:begin-login-capture", () => profileStore.beginLoginCapture());
@@ -289,6 +385,8 @@ function registerIpc(): void {
         });
     return result.canceled || result.filePaths.length === 0 ? null : result.filePaths[0];
   });
+  safeHandle("window:show-main", () => showMainWindow());
+  safeHandle("window:hide-account-bar", () => hideAccountBar());
   // Security: report whether an unlock passphrase is needed (no OS keychain and
   // none set yet), and set the in-memory session passphrase on unlock. Setting
   // it re-seals any auth files that were left plaintext before unlock.
@@ -313,6 +411,9 @@ function applyNativeTheme(theme: "light" | "dark"): void {
   const bg = theme === "light" ? "#fafafa" : "#0a0a0a";
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.setBackgroundColor(bg);
+  }
+  if (accountBarWindow && !accountBarWindow.isDestroyed()) {
+    accountBarWindow.setBackgroundColor(bg);
   }
 }
 
@@ -340,6 +441,7 @@ async function mutate<T>(action: () => Promise<T>): Promise<T> {
 async function broadcastStateChanged(): Promise<void> {
   await updateTrayMenu();
   mainWindow?.webContents.send("state:changed");
+  accountBarWindow?.webContents.send("state:changed");
 }
 
 async function exportProfiles(passphrase?: string) {
@@ -391,7 +493,8 @@ function createTray(): void {
   const icon = getTrayIcon();
   tray = new Tray(icon);
   tray.setToolTip("Relay");
-  tray.on("click", showMainWindow);
+  tray.on("click", toggleAccountBar);
+  tray.on("double-click", showMainWindow);
   updateTrayMenu();
 }
 
@@ -424,6 +527,10 @@ async function updateTrayMenu(): Promise<void> {
       }
     },
     { type: "separator" },
+    {
+      label: accountBarWindow?.isVisible() ? "Hide Account Bar" : "Show Account Bar",
+      click: toggleAccountBar
+    },
     { label: "Show Main Window", click: showMainWindow },
     {
       label: "Quit Application",
@@ -525,6 +632,9 @@ function showTrayNotification(body: string): void {
 }
 
 app.whenReady().then(async () => {
+  if (!hasSingleInstanceLock) {
+    return;
+  }
   const processManager = new CrossPlatformProcessManager();
   const usageService = new UsageService();
   const loginCaptureService = new CodexLoginCaptureService({
@@ -540,7 +650,6 @@ app.whenReady().then(async () => {
   });
   profileStore = new ProfileStore(storageRoot, processManager, usageService, loginCaptureService);
   await profileStore.initialize();
-  await profileStore.ensureInitialProfiles();
   const initialState = await profileStore.getState();
   await applyProxySettings(initialState.settings);
   // Apply the saved colour scheme before creating the window so the OS titlebar
@@ -558,12 +667,35 @@ app.whenReady().then(async () => {
   activeProfileSyncer = new ActiveProfileSyncer(profileStore, processManager, broadcastStateChanged);
   registerIpc();
 
-  mainWindow = createWindow();
+  // Keep startup light: the compact account bar is the primary surface. The
+  // full dashboard is created only when the user explicitly opens it.
+  accountBarWindow = createAccountBarWindow();
   createTray();
-  if (initialState.settings.serviceRunning) {
-    usagePoller.start();
+  accountBarWindow.show();
+  readyForWindows = true;
+  const accountBarShortcutRegistered = globalShortcut.register("CommandOrControl+Shift+Space", toggleAccountBar);
+  if (!accountBarShortcutRegistered) {
+    console.warn("[Relay] Ctrl+Shift+Space could not be registered because another application is using it.");
   }
-  activeProfileSyncer.start();
+
+  // Profile capture performs filesystem copies and usage refresh performs
+  // network I/O. Defer both until after the first window has rendered so an
+  // app launch never has to wait for them. Delay the syncer's first pass to
+  // avoid copying the same active profile twice during startup.
+  const deferredStartup = setTimeout(() => {
+    void profileStore.ensureInitialProfiles()
+      .then(broadcastStateChanged)
+      .catch((error: Error | string | null | undefined) => {
+        console.error("Deferred profile initialization failed", error);
+      })
+      .finally(() => {
+        if (initialState.settings.serviceRunning) {
+          usagePoller.start();
+        }
+        activeProfileSyncer.start(30_000);
+      });
+  }, 750);
+  deferredStartup.unref?.();
 
   initializeAutoUpdater();
 
@@ -574,9 +706,14 @@ app.whenReady().then(async () => {
   });
 });
 
+app.on("will-quit", () => {
+  globalShortcut.unregisterAll();
+});
+
 function initializeAutoUpdater(): void {
-  // Only check for updates when packaged.
-  if (!app.isPackaged) {
+  // Custom account-bar builds must not be replaced by the upstream updater.
+  // Installing a future official Relay release remains an explicit user choice.
+  if (!app.isPackaged || app.getVersion().includes("accountbar")) {
     return;
   }
 

@@ -89,11 +89,11 @@ export function App() {
               if (pass) {
                 await api.unlock({ passphrase: pass });
               }
-              await loadState();
+              await loadState(false);
             },
             onCancel: () => {
               setPromptModal(null);
-              void loadState();
+              void loadState(false);
             }
           });
           return;
@@ -102,7 +102,7 @@ export function App() {
         // If the unlock probe fails, fall through to loadState; auth writes will
         // surface a clear error if sealing is still unavailable.
       }
-      await loadState();
+      await loadState(false);
     })();
     const cleanupFocus = api.focusProfile((input) => {
       void loadState(false, false).then(() => setSelected(input));

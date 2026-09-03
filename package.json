@@ -1,8 +1,8 @@
 {
- "name": "relay",
- "version": "0.2.8",
+ "name": "relay-accountbar",
+ "version": "0.2.9-accountbar.4",
  "private": true,
- "description": "Account switcher for the ChatGPT desktop app.",
+ "description": "Compact multi-account and quota companion for the OpenAI Codex desktop app.",
  "main": "dist-electron/electron/main.js",
  "type": "module",
  "scripts": {
@@ -19,6 +19,17 @@
  "author": {
   "name": "Relay",
   "email": "arkucrypto@gmail.com"
+ },
+ "contributors": [
+  "eileendong35-design"
+ ],
+ "repository": {
+  "type": "git",
+  "url": "https://github.com/eileendong35-design/relay-accountbar.git"
+ },
+ "homepage": "https://github.com/eileendong35-design/relay-accountbar#readme",
+ "bugs": {
+  "url": "https://github.com/eileendong35-design/relay-accountbar/issues"
  },
  "dependencies": {
   "electron-updater": "^6.8.9",
@@ -48,8 +59,8 @@
   "publish": [
    {
     "provider": "github",
-    "owner": "ark-daemon",
-    "repo": "relay"
+    "owner": "eileendong35-design",
+    "repo": "relay-accountbar"
    }
   ],
   "productName": "Relay",

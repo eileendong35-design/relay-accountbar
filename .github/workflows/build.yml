@@ -33,11 +33,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libsecret-1-dev fakeroot rpm
       - run: npm ci
+      - run: npm test
       - run: npm run build
       - run: npx electron-builder --${{ matrix.target }} --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/upload-artifact@v4
         with:
-          name: codex-manager-${{ matrix.os }}
+          name: relay-accountbar-${{ matrix.os }}
           path: ${{ matrix.artifact }}

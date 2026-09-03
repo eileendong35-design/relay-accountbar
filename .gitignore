@@ -2,6 +2,7 @@ node_modules/
 dist/
 dist-electron/
 release/
+exports/
 out/
 .npm-cache/
 .electron-builder-cache/

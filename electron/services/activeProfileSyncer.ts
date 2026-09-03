@@ -14,11 +14,11 @@ export class ActiveProfileSyncer {
     private readonly onSynced: SyncCallback = () => undefined
   ) {}
 
-  start(): void {
+  start(initialDelayMs = 0): void {
     if (this.timer) {
       return;
     }
-    this.schedule(0);
+    this.schedule(initialDelayMs);
   }
 
   stop(): void {
