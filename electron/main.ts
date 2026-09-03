@@ -31,8 +31,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const envPaths = getEnvPaths();
 const storageRoot = path.join(envPaths.localAppData, "Relay");
 
-function getAppIconPath(): string {
-  const assetsDir = path.join(__dirname, "..", "assets");
+function getAssetsDir(): string {
+  const packagedAssetsDir = path.join(process.resourcesPath, "assets");
+  if (app.isPackaged && fs.existsSync(packagedAssetsDir)) {
+    return packagedAssetsDir;
+  }
+  return path.join(__dirname, "..", "assets");
+}
+
+function getAppIconPath(): string | undefined {
+  const assetsDir = getAssetsDir();
   const buildDir = path.join(__dirname, "..", "build");
 
   if (process.platform === "win32") {
@@ -53,11 +61,12 @@ function getAppIconPath(): string {
   const png512 = path.join(assetsDir, "icon.png");
   if (fs.existsSync(png512)) return png512;
 
-  return path.join(assetsDir, "tray-icon.png");
+  const trayIcon = path.join(assetsDir, "tray-icon.png");
+  return fs.existsSync(trayIcon) ? trayIcon : undefined;
 }
 
 function getTrayIcon(): Electron.NativeImage {
-  const assetsDir = path.join(__dirname, "..", "assets");
+  const assetsDir = getAssetsDir();
   const candidates = [
     path.join(assetsDir, "tray-icon-32x32.png"),
     path.join(assetsDir, "tray-icon-32.png"),
@@ -71,7 +80,7 @@ function getTrayIcon(): Electron.NativeImage {
       return nativeImage.createFromPath(iconPath);
     }
   }
-  return nativeImage.createFromPath(path.join(assetsDir, "tray-icon.png"));
+  return nativeImage.createEmpty();
 }
 
 const appIconPath = getAppIconPath();
@@ -160,7 +169,7 @@ function createWindow(): BrowserWindow {
     minWidth: 900,
     minHeight: 600,
     title: "Relay",
-    icon: appIconPath,
+    ...(appIconPath ? { icon: appIconPath } : {}),
     autoHideMenuBar: true,
     backgroundColor: "#0A0A0F",
     titleBarStyle: "default",
@@ -171,7 +180,14 @@ function createWindow(): BrowserWindow {
       sandbox: true
     }
   });
-  window.setIcon(appIconPath);
+  if (process.platform !== "darwin" && appIconPath) {
+    try {
+      const icon = nativeImage.createFromPath(appIconPath);
+      if (!icon.isEmpty()) window.setIcon(icon);
+    } catch (error) {
+      console.warn(`[Relay] Unable to set the window icon: ${String(error)}`);
+    }
+  }
   window.setTitle("Relay");
 
   if (process.env.VITE_DEV_SERVER_URL) {
@@ -262,7 +278,7 @@ function createAccountBarWindow(): BrowserWindow {
     minHeight: 360,
     maxWidth: 420,
     title: "Relay Account Bar",
-    icon: appIconPath,
+    ...(appIconPath ? { icon: appIconPath } : {}),
     frame: false,
     transparent: false,
     resizable: true,

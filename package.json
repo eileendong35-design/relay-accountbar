@@ -1,6 +1,6 @@
 {
  "name": "relay-accountbar",
- "version": "0.2.9-accountbar.4",
+ "version": "0.2.9-accountbar.5",
  "private": true,
  "description": "Compact multi-account and quota companion for the OpenAI Codex desktop app.",
  "main": "dist-electron/electron/main.js",
@@ -72,6 +72,19 @@
    "dist-electron/**/*",
    "!dist-electron/**/*.map",
    "package.json"
+  ],
+  "extraResources": [
+   {
+    "from": "assets",
+    "to": "assets",
+    "filter": [
+     "app-icon.ico",
+     "app-icon.icns",
+     "icon.png",
+     "tray-icon*.png",
+     "notification-icon.png"
+    ]
+   }
   ],
   "win": {
    "icon": "assets/app-icon.ico",
