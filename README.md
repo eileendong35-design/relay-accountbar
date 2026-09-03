@@ -10,6 +10,12 @@
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 </div>
 
+<div align="center">
+
+[简体中文](./README.zh-CN.md) | **English**
+
+</div>
+
 Relay Account Bar is an unofficial community-enhanced fork of
 [ark-daemon/relay](https://github.com/ark-daemon/relay). It manages locally stored
 Codex profiles, shows quota windows in a compact always-on-top panel, and makes
@@ -19,16 +25,20 @@ switching between accounts easier on Windows, macOS, and Linux.
 > accounts you own or are authorized to use, and follow the applicable OpenAI
 > terms and policies. It is not intended to bypass service restrictions.
 
-## 增强功能 / Enhancements
+## Enhancements
 
-- 紧凑型常驻账号栏，可同时查看账号、额度百分比和重置倒计时
-- 点击账号即可切换，单独刷新某个账号的用量
-- `Ctrl/Command + Shift + Space` 显示或隐藏账号栏
-- 可通过账号栏关闭按钮或系统托盘图标进行鼠标操作
-- Electron 单实例锁：重复启动只唤醒已有实例，不创建重复账号栏
-- 启动优化：优先显示轻量账号栏，完整主窗口按需创建
-- 账号同步和额度网络请求延后执行，减少冷启动卡顿
-- 自定义版本不会被上游自动更新静默覆盖
+- Compact always-on-top account bar showing accounts, quota percentages, and
+  reset countdowns at a glance
+- Click an account to switch profiles, or refresh the quota for one account
+- `Ctrl/Command + Shift + Space` toggles the account bar
+- Mouse controls through the account-bar close button and system tray icon
+- Electron single-instance lock: reopening Relay wakes the existing instance
+  instead of creating another account bar
+- Faster startup: the lightweight account bar appears first and the full
+  dashboard is created only when needed
+- Account synchronization and quota requests are deferred to reduce cold-start
+  pauses
+- Custom builds are protected from being silently replaced by upstream updates
 
 ## Original Relay features
 
@@ -42,8 +52,8 @@ switching between accounts easier on Windows, macOS, and Linux.
 ## Installation
 
 Download a package from the repository's
-[Releases](https://github.com/eileendong35-design/relay-accountbar/releases) page
-when one is available, or build from source.
+[Releases](https://github.com/eileendong35-design/relay-accountbar/releases) page,
+or build from source.
 
 ### Build from source
 
@@ -53,7 +63,6 @@ Requirements: Node.js 22+ and npm 10+.
 git clone https://github.com/eileendong35-design/relay-accountbar.git
 cd relay-accountbar
 npm ci
-npm test
 npm run build
 ```
 
@@ -105,6 +114,11 @@ tests/     Vitest unit and integration tests
 assets/    Application and tray icons
 scripts/   Build helpers
 ```
+
+## Contributing
+
+Contributions are welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md) or the
+[简体中文贡献指南](./CONTRIBUTING.zh-CN.md).
 
 ## Attribution and license
 
